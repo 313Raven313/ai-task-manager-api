@@ -1,7 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from app.core.database import engine, Base, get_db
+from app.models import Task
 
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
 
 
 class TaskCreate(BaseModel):
@@ -15,17 +20,23 @@ class TaskResponse(BaseModel):
 
 tasks = []
 
-
 @app.get("/")
 def read_root():
     return {"message": "First API"}
 
-@app.get("/tasks", response_model=list[TaskResponse])
-def get_tasks():
+@app.get("/tasks")
+def get_tasks(db: Session = Depends(get_db)):
+    tasks = db.query(Task).all()
+    
     return tasks
 
 @app.post("/tasks")
-def add_task(task: TaskCreate):
-    tasks.append(task.model_dump())
-    return {"message": "Task created"}
+def create_task(title: str, db: Session = Depends(get_db)):
+    new_task = Task(title=title)
+    
+    db.add(new_task)
+    db.commit()
+    db.fefresh(new_task)
+    
+    return new_task
 
