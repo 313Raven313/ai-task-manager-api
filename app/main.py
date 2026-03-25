@@ -18,8 +18,6 @@ class TaskResponse(BaseModel):
     completed: bool
 
 
-tasks = []
-
 @app.get("/")
 def read_root():
     return {"message": "First API"}
